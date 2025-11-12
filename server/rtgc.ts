@@ -39,16 +39,21 @@ async function getHardlinkedFilesRecursive(dir: string): Promise<string[]> {
   return children.flat();
 }
 
+function isEnoentError(error: unknown): error is NodeJS.ErrnoException {
+  if (!error || typeof error !== "object") return false;
+  const err = error as NodeJS.ErrnoException;
+  return (
+    err.code === "ENOENT" ||
+    err.errno === -2 ||
+    (typeof err.message === "string" && err.message.includes("ENOENT"))
+  );
+}
+
 async function safeDu(path: string): Promise<number> {
   try {
     return await du(path);
   } catch (error) {
-    if (
-      error &&
-      typeof error === "object" &&
-      "code" in error &&
-      (error as NodeJS.ErrnoException).code === "ENOENT"
-    ) {
+    if (isEnoentError(error)) {
       console.warn(`Skipping size calculation for missing path: ${path}`);
       return 0;
     }
