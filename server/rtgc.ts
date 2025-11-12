@@ -39,6 +39,23 @@ async function getHardlinkedFilesRecursive(dir: string): Promise<string[]> {
   return children.flat();
 }
 
+async function safeDu(path: string): Promise<number> {
+  try {
+    return await du(path);
+  } catch (error) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      (error as NodeJS.ErrnoException).code === "ENOENT"
+    ) {
+      console.warn(`Skipping size calculation for missing path: ${path}`);
+      return 0;
+    }
+    throw error;
+  }
+}
+
 /**
  * Given a list of paths like
  *
@@ -130,7 +147,7 @@ export async function scanTorrents(
     torrents.map(async (torrent) => {
       const [stats, size] = await Promise.all([
         stat(torrent.basePath).catch(() => null),
-        du(torrent.basePath),
+        safeDu(torrent.basePath),
       ]);
 
       return {
@@ -162,7 +179,7 @@ export async function scanOrphanedPaths(
 
   return await Promise.all(
     orphanedPaths.map(async (path) => {
-      const [stats, size] = await Promise.all([stat(path), du(path)]);
+      const [stats, size] = await Promise.all([stat(path), safeDu(path)]);
       return {
         type: "orphaned",
         path,
@@ -195,11 +212,11 @@ export async function deleteOrphanedPaths(
   }
 
   const totalSize = (
-    await Promise.all(orphanedPaths.map((path) => du(path.path)))
+    await Promise.all(orphanedPaths.map((path) => safeDu(path.path)))
   ).reduce((acc, size) => acc + size, 0);
 
   const dataDirsSize = (
-    await Promise.all(dataDirs.map((dir) => du(dir)))
+    await Promise.all(dataDirs.map((dir) => safeDu(dir)))
   ).reduce((acc, size) => acc + size, 0);
 
   if (totalSize / dataDirsSize > failPastThreshold) {
