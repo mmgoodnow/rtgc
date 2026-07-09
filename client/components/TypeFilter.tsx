@@ -16,10 +16,8 @@ const DEFAULT_PROBLEM_TYPES: (ProblemType | "orphaned")[] = [
   "unregistered",
   "missingFiles",
   "timeout",
-  "unknown",
-  "healthy",
-  "orphaned",
 ];
+const TRAILING_PROBLEM_TYPES = ["unknown", "healthy", "orphaned"] as const;
 
 export function TypeFilter({
   selectedType,
@@ -33,12 +31,20 @@ export function TypeFilter({
     )
   );
   counts.orphaned = orphanedPaths.length;
-  const problemTypes = Array.from(
-    new Set([
+  const problemTypes = [
+    ...new Set([
       ...DEFAULT_PROBLEM_TYPES,
-      ...problemTorrents.map((torrent) => torrent.type),
-    ])
-  );
+      ...problemTorrents
+        .map((torrent) => torrent.type)
+        .filter(
+          (type) =>
+            !TRAILING_PROBLEM_TYPES.includes(
+              type as (typeof TRAILING_PROBLEM_TYPES)[number]
+            )
+        ),
+    ]),
+    ...TRAILING_PROBLEM_TYPES,
+  ];
 
   return (
     <Flex gap={2} align="center">
