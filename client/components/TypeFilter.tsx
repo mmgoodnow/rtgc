@@ -12,7 +12,7 @@ interface TypeFilterProps {
   onChange: (type: ProblemType | "orphaned") => void;
 }
 
-const PROBLEM_TYPES: (ProblemType | "orphaned")[] = [
+const DEFAULT_PROBLEM_TYPES: (ProblemType | "orphaned")[] = [
   "unregistered",
   "missingFiles",
   "timeout",
@@ -27,21 +27,29 @@ export function TypeFilter({
   orphanedPaths,
   onChange,
 }: TypeFilterProps) {
-  const counts = {
-    ...Object.groupBy(problemTorrents, (p) => p.type),
-    orphaned: orphanedPaths,
-  };
+  const counts: Record<string, number> = Object.fromEntries(
+    Object.entries(Object.groupBy(problemTorrents, (p) => p.type)).map(
+      ([type, torrents]) => [type, torrents?.length ?? 0]
+    )
+  );
+  counts.orphaned = orphanedPaths.length;
+  const problemTypes = Array.from(
+    new Set([
+      ...DEFAULT_PROBLEM_TYPES,
+      ...problemTorrents.map((torrent) => torrent.type),
+    ])
+  );
 
   return (
     <Flex gap={2} align="center">
-      {PROBLEM_TYPES.map((type) => (
+      {problemTypes.map((type) => (
         <Button
           key={type}
           value={type}
           variant={selectedType === type ? "solid" : "subtle"}
           onClick={() => onChange(type)}
         >
-          {type} ({counts[type]?.length ?? 0})
+          {type} ({counts[type] ?? 0})
         </Button>
       ))}
     </Flex>

@@ -7,7 +7,6 @@ import {
   VStack,
   IconButton,
 } from "@chakra-ui/react";
-import { NativeSelect } from "@chakra-ui/react";
 import {
   useMutation,
   useQueryClient,
@@ -27,7 +26,7 @@ import {
 } from "./ui/dialog";
 import type { Rule } from "../server/types";
 
-const PROBLEM_TYPES = [
+const DEFAULT_PROBLEM_TYPES = [
   "healthy",
   "unregistered",
   "missingFiles",
@@ -39,8 +38,7 @@ export function Rules() {
   const [open, setOpen] = useState(false);
   const [rules, setRules] = useState<Rule[]>([]);
   const [newSubstring, setNewSubstring] = useState("");
-  const [newType, setNewType] =
-    useState<(typeof PROBLEM_TYPES)[number]>("unknown");
+  const [newType, setNewType] = useState("unknown");
   const queryClient = useQueryClient();
 
   const { data } = useSuspenseQuery(trpc.rules.getRules.queryOptions());
@@ -67,14 +65,20 @@ export function Rules() {
   );
 
   const handleAddRule = () => {
-    if (!newSubstring) return;
+    const substring = newSubstring.trim();
+    const type = newType.trim();
+    if (!substring || !type) return;
     const newRule: Rule = {
       matchType: "substring",
-      substring: newSubstring,
-      type: newType,
+      substring,
+      type,
     };
     updateRulesMutation.mutate([...rules, newRule]);
   };
+
+  const problemTypes = Array.from(
+    new Set([...DEFAULT_PROBLEM_TYPES, ...rules.map((rule) => rule.type)])
+  );
 
   const handleDeleteRule = (index: number) => {
     const newRules = [...rules];
@@ -147,27 +151,21 @@ export function Rules() {
                   onChange={(e) => setNewSubstring(e.target.value)}
                   placeholder="Enter substring to match"
                 />
-                <NativeSelect.Root>
-                  <NativeSelect.Field
-                    value={newType}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                      setNewType(
-                        e.target.value as (typeof PROBLEM_TYPES)[number]
-                      )
-                    }
-                  >
-                    {PROBLEM_TYPES.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </NativeSelect.Field>
-                  <NativeSelect.Indicator />
-                </NativeSelect.Root>
+                <Input
+                  value={newType}
+                  onChange={(e) => setNewType(e.target.value)}
+                  placeholder="Enter or select a type"
+                  list="problem-types"
+                />
+                <datalist id="problem-types">
+                  {problemTypes.map((type) => (
+                    <option key={type} value={type} />
+                  ))}
+                </datalist>
                 <Button
                   width="full"
                   onClick={handleAddRule}
-                  disabled={!newSubstring}
+                  disabled={!newSubstring.trim() || !newType.trim()}
                 >
                   Add Rule
                 </Button>

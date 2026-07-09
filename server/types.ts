@@ -26,12 +26,8 @@ export interface Settings {
   failPastThreshold: number;
 }
 
-export type ProblemType =
-  | "healthy"
-  | "unregistered"
-  | "missingFiles"
-  | "timeout"
-  | "unknown";
+// Classification names are user-defined by rules at runtime.
+export type ProblemType = string;
 
 export interface ProblemTorrent {
   path: string;

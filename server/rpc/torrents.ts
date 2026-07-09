@@ -67,13 +67,7 @@ export const torrents = router({
         z.object({
           path: z.string(),
           size: z.number(),
-          type: z.enum([
-            "healthy",
-            "unregistered",
-            "missingFiles",
-            "unknown",
-            "timeout",
-          ]),
+          type: z.string().min(1),
           torrentInfo: torrentInfoSchema,
           lastModified: z.number(),
         })
